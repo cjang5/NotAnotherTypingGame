@@ -1,4 +1,4 @@
-//Not Another Typing Game v0.1a POOP
+//Not Another Typing Game v0.1a
 //By: Chris Jang 3/6/14
 /*This source code copyrighted by Christopher Jang 2014
 and may not be redistributed without written permission.*/
