@@ -15,7 +15,7 @@ and may not be redistributed without written permission.*/
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
-//LTexture class
+//LTexture class **TODO: Move to a separate .cpp file
 class LTexture {
 public:
 	//constructor
@@ -62,6 +62,41 @@ private:
 	int imageHeight;
 };
 
+//sprites for each respective button state
+enum ButtonSprites {
+	BUTTON_NORMAL,
+	BUTTON_HOVER,
+	BUTTON_DOWN,
+	BUTTON_UP,
+	BUTTON_SPRITE_TOTAL
+};
+
+//LButton class
+class LButton {
+public:
+	//constructor
+	LButton();
+
+	//set the (x, y) position of the button
+	void setPosition(int x, int y);
+
+	//handle different events
+	void handleEvent(SDL_Event* e);
+
+	//render the button at its set position
+	void render();
+
+private:
+	//(x, y) position
+	SDL_Point position;
+
+	//this button's spritesheet
+	LTexture spriteSheet;
+
+	//the current sprite of the button
+	ButtonSprites currentSprite;
+};
+
 //sdl variables
 //main window
 SDL_Window* globalWindow = NULL;
@@ -83,16 +118,35 @@ std::string currentWord;
 LTexture goodJob;
 
 //Level 1 word bank
-std::string level1[] = { "HELLO", "BOY", "WARRIOR", "EDMUND", "MEATBOY", "INDIE", "FEZ", "SPACE", "PIXEL", "TERRAIN", "FUN", "DEVELOP", "ARCADE",
-"BASIC", "RANDOM", "KEY", "AND", "BOOK", "SPELL", "GUN", "RPG", "TWEET", "FLAPPY", "BIRD", "TIME", "WARP", "BUNNY", "MARIO",
-"SUPER", "MEGA", "AWE", "TO", "THE", "WHAT", "NOOB", "OMG" };
+std::string level1[] = {"HELLO", "BOY", "WARRIOR", "EDMUND", "MEATBOY", "INDIE", "FEZ", "SPACE", "PIXEL", "TERRAIN", "FUN", "DEVELOP", "ARCADE",
+						"BASIC", "RANDOM", "KEY", "AND", "BOOK", "SPELL", "GUN", "RPG", "TWEET", "FLAPPY", "BIRD", "TIME", "WARP", "BUNNY", "MARIO",
+						"SUPER", "MEGA", "AWE", "TO", "THE", "WHAT", "NOOB", "OMG"};
+
+//main menu
+////the number of buttons on the main menu
+const int MAIN_NUM_BUTTONS = 3;
+
+////button constants
+const int BUTTON_WIDTH = 150;
+const int BUTTON_HEIGHT = 50;
+
+////Sprite clipping Rects
+SDL_Rect buttonSpriteClips[BUTTON_SPRITE_TOTAL];
+
+////Spritesheet for main menu buttons
+LTexture startButtonSpriteSheet;
+LTexture optionsButtonSpriteSheet;
+LTexture helpButtonSpriteSheet;
+
+////Main menu button objects
+LButton mainButtons[MAIN_NUM_BUTTONS];
 
 //global method forward declarations
-//initializer
+////initializer
 bool init();
-//loads media we will be using
+////loads media we will be using
 bool loadMedia();
-//closes everything
+////closes everything
 void close();
 
 //LTexture class methods
@@ -239,6 +293,76 @@ int LTexture::getHeight() {
 	return imageHeight;
 }
 
+//LButton class methods
+////constructor
+LButton::LButton() {
+	//initialize button's position
+	position.x = 0;
+	position.y = 0;
+
+	//initialize its current sprite
+	currentSprite = BUTTON_NORMAL;
+}
+
+////set the position (x, y)
+void LButton::setPosition(int x, int y) {
+	position.x = x;
+	position.y = y;
+}
+
+void LButton::handleEvent(SDL_Event* e) {
+	//if a mouse event took place
+	if (e->type == SDL_MOUSEMOTION || e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP) {
+		//get cursor position
+		int x, y;
+		SDL_GetMouseState(&x, &y);
+
+		//check if the cursor is inside the button dimensions
+		bool inside = true; //initialized to true
+
+		////if cursor is to the left
+		if (x < position.x) {
+			inside = false;
+		}
+		////if cursor is to the right
+		else if (x > position.x + BUTTON_WIDTH) {
+			inside = false;
+		}
+		////if cursor is above
+		else if (y < position.y) {
+			inside = false;
+		}
+		////if cursor is below
+		else if (y > position.y + BUTTON_HEIGHT) {
+			inside = false;
+		}
+
+		//if mouse is outside
+		if (!inside) {
+			currentSprite = BUTTON_NORMAL;
+		}
+		//otherwise, if it's outside
+		else {
+			switch (e->type) {
+			case SDL_MOUSEMOTION:
+				currentSprite = BUTTON_HOVER;
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+				currentSprite = BUTTON_DOWN;
+				break;
+			case SDL_MOUSEBUTTONUP:
+				currentSprite = BUTTON_UP;
+				break;
+			}
+		}
+	}
+}
+
+////render the button's current sprite
+void LButton::render() {
+	spriteSheet.render(position.x, position.y, &buttonSpriteClips[currentSprite]);
+}
+
 //global methods
 //initializer
 bool init() {
@@ -316,6 +440,8 @@ bool loadMedia() {
 		goodJob.loadFromText("GOOD JOB!", testColor);
 	}
 
+	//load main menu button spritesheets
+
 	return success;
 }
 
@@ -362,8 +488,12 @@ int main(int argc, char* args[]) {
 			printf("[main] Failed to load media!\n");
 		}
 		else {
+			//TODO: MAKE QUIT = true 
 			//main loop flag
-			bool quit = false;
+			bool quit = false; //true so it wont run while you're in the menu
+
+			//Menu is displayed before the main game loop executes
+			
 
 			//SDL Event handler
 			SDL_Event e;
@@ -371,7 +501,7 @@ int main(int argc, char* args[]) {
 			//white color
 			SDL_Color white = { 255, 255, 255 };
 			//current word that must be typed in order to progress
-			currentWord = "TEST";
+			currentWord = "WELCOME";
 			std::string currentGuess;
 
 			//get a new word?
@@ -525,6 +655,11 @@ int main(int argc, char* args[]) {
 
 				//render current word
 				currentWordTexture.render((SCREEN_WIDTH - currentWordTexture.getWidth()) / 2, (SCREEN_HEIGHT - currentWordTexture.getHeight()) / 2);
+
+				/*//test for timer bar
+				SDL_SetRenderDrawColor(globalRenderer, 255, 0, 0, 255);
+				SDL_Rect timer = { 0, 0, 150, 30 };
+				SDL_RenderFillRect(globalRenderer, &timer); */
 
 				//update screen
 				SDL_RenderPresent(globalRenderer);
