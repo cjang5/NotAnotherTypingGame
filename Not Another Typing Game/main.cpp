@@ -585,7 +585,7 @@ int main(int argc, char* args[]) {
 
 					//main background
 					SDL_Rect backGround = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
-					SDL_SetRenderDrawColor(globalRenderer, 77, 89, 98, 255);
+					SDL_SetRenderDrawColor(globalRenderer, 80, 90, 100, 255);
 					SDL_RenderFillRect(globalRenderer, &backGround);
 
 					//render the buttons
@@ -709,7 +709,7 @@ int main(int argc, char* args[]) {
 
 					//main background
 					SDL_Rect backGround = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
-					SDL_SetRenderDrawColor(globalRenderer, 77, 89, 98, 255);
+					SDL_SetRenderDrawColor(globalRenderer, 80, 90, 100, 255);
 					SDL_RenderFillRect(globalRenderer, &backGround);
 
 					if (currentWord.length() > 0) {
