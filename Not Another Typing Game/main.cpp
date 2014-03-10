@@ -88,10 +88,8 @@ public:
 	void setSpriteSheet(LTexture* sheet);
 
 	//handle different events
-	void handleEvent(SDL_Event* e);
+	bool handleEvent(SDL_Event* e);
 
-	//TEMP: Return events
-	
 	//render the button at its set position
 	void render();
 
@@ -320,7 +318,8 @@ void LButton::setSpriteSheet(LTexture* sheet) {
 	spriteSheet = sheet;
 }
 
-void LButton::handleEvent(SDL_Event* e) {
+////handleEvent
+bool LButton::handleEvent(SDL_Event* e) {
 	//if a mouse event took place
 	if (e->type == SDL_MOUSEMOTION || e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP) {
 		//get cursor position
@@ -362,10 +361,13 @@ void LButton::handleEvent(SDL_Event* e) {
 				break;
 			case SDL_MOUSEBUTTONUP:
 				currentSprite = BUTTON_UP;
+				return true;
 				break;
 			}
 		}
 	}
+
+	return false;
 }
 
 ////render the button's current sprite
@@ -573,7 +575,8 @@ int main(int argc, char* args[]) {
 							inMenu = false;
 
 						//handle button events
-						startButton.handleEvent(&e);
+						if (startButton.handleEvent(&e))
+							inMenu = false;
 						optionsButton.handleEvent(&e);
 						helpButton.handleEvent(&e);
 					}
