@@ -90,6 +90,8 @@ public:
 	//handle different events
 	void handleEvent(SDL_Event* e);
 
+	//TEMP: Return events
+	
 	//render the button at its set position
 	void render();
 
@@ -354,15 +356,12 @@ void LButton::handleEvent(SDL_Event* e) {
 			switch (e->type) {
 			case SDL_MOUSEMOTION:
 				currentSprite = BUTTON_HOVER;
-				printf("hover\n");
 				break;
 			case SDL_MOUSEBUTTONDOWN:
 				currentSprite = BUTTON_DOWN;
-				printf("down\n");
 				break;
 			case SDL_MOUSEBUTTONUP:
 				currentSprite = BUTTON_UP;
-				printf("up\n");
 				break;
 			}
 		}
@@ -372,7 +371,6 @@ void LButton::handleEvent(SDL_Event* e) {
 ////render the button's current sprite
 void LButton::render() {
 	spriteSheet->render(position.x, position.y, &buttonSpriteClips[currentSprite]);
-	printf("%i", currentSprite);
 }
 
 //global methods
