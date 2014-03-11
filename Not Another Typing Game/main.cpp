@@ -10,6 +10,7 @@ and may not be redistributed without written permission.*/
 #include <SDL_ttf.h>
 #include <stdlib.h> //for rand(), srand()
 #include <time.h> //for time - rand seed
+#include "LTexture.h"
 
 //window dimensions
 const int SCREEN_WIDTH = 640;
@@ -18,53 +19,6 @@ const int SCREEN_HEIGHT = 480;
 ////button constants
 const int BUTTON_WIDTH = 150;
 const int BUTTON_HEIGHT = 50;
-
-//LTexture class **TODO: Move to a separate .cpp file
-class LTexture {
-public:
-	//constructor
-	LTexture();
-
-	//destructor
-	~LTexture();
-
-	//deallocator
-	void free();
-
-	//load image from file
-	bool loadFromFile(std::string path);
-
-	//load from inputted text
-	bool loadFromText(std::string text, SDL_Color color);
-
-	//set blending mode
-	void setBlendingMode(SDL_BlendMode blend);
-
-	//set alpha
-	void setAlpha(Uint8 a);
-
-	//set color
-	void setColor(Uint8 r, Uint8 g, Uint8 b);
-
-	//render the image
-	void render(int x, int y, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE);
-
-	//get image width
-	int getWidth();
-
-	//get image height
-	int getHeight();
-
-private:
-	//actual image texture
-	SDL_Texture* hardTexture;
-
-	//image width
-	int imageWidth;
-
-	//image height
-	int imageHeight;
-};
 
 //sprites for each respective button state
 enum ButtonSprites {
@@ -104,6 +58,42 @@ private:
 	ButtonSprites currentSprite;
 };
 
+//Monster class
+class Monster {
+public:
+	//constructor
+	Monster();
+
+	//TEMP CONSTRUCTOR
+	Monster(std::string s);
+
+	//render the monster
+	void render();
+
+	//get HP
+	int getHP();
+
+	//get monster's name
+	std::string getName();
+
+	//deal damage to monster
+	void dealDamage(int dmg);
+
+	//is the monster alive?
+	bool isAlive();
+
+private:
+	//HP
+	int HP;
+
+	//name
+	std::string name;
+	LTexture nameSprite;
+
+	//Monsters sprite
+	LTexture sprite;
+};
+
 //sdl variables
 //main window
 SDL_Window* globalWindow = NULL;
@@ -113,6 +103,8 @@ SDL_Renderer* globalRenderer = NULL;
 
 //main font (for now)
 TTF_Font* globalFont = NULL;
+//main font (smaller)
+TTF_Font* globalFontSmall = NULL;
 
 //main text to be rendered
 LTexture mainText;
@@ -120,6 +112,9 @@ LTexture mainText;
 //current word to be typed
 LTexture currentWordTexture;
 std::string currentWord;
+
+//color white
+SDL_Color white = { 255, 255, 255 };
 
 //'good job!'
 LTexture goodJob;
@@ -151,150 +146,6 @@ bool init();
 bool loadMedia();
 ////closes everything
 void close();
-
-//LTexture class methods
-//constructor
-LTexture::LTexture() {
-	//initialize everything
-	hardTexture = NULL;
-	imageWidth = 0;
-	imageHeight = 0;
-}
-
-//destructor
-LTexture::~LTexture() {
-	//deallocate everything
-	free();
-}
-
-//deallocator
-void LTexture::free() {
-	//if the hardTexture exists, destroy it
-	if (hardTexture != NULL) {
-		SDL_DestroyTexture(hardTexture);
-		hardTexture = NULL;
-
-		//reinitialize dimensions
-		imageWidth = 0;
-		imageHeight = 0;
-	}
-}
-
-//load an image from a file path
-bool LTexture::loadFromFile(std::string path) {
-	//free any existing textures
-	free();
-
-	//final texture that will be assigned to 'hardTexture'
-	SDL_Texture* finalTexture = NULL;
-
-	//where the image will come from
-	SDL_Surface* loadedSurface = IMG_Load(path.c_str());
-
-	if (loadedSurface == NULL) {
-		printf("[LTexture::loadFromFile] Failed to load surface!\n");
-	}
-	else {
-		//color key the image
-		SDL_SetColorKey(loadedSurface, SDL_TRUE, SDL_MapRGB(loadedSurface->format, 255, 0, 255)); //colorkey color: magenta?
-
-		//create texture from the surface
-		finalTexture = SDL_CreateTextureFromSurface(globalRenderer, loadedSurface);
-
-		if (finalTexture == NULL) {
-			printf("[LTexture::loadFromFile] Failed to create texture from surface!\n");
-		}
-		else {
-			//get image's dimensions
-			imageWidth = loadedSurface->w;
-			imageHeight = loadedSurface->h;
-		}
-	}
-
-	//assign the new hardTexture
-	hardTexture = finalTexture;
-
-	//return if the method was successful
-	return hardTexture != NULL;
-}
-
-//load image from typed text
-bool LTexture::loadFromText(std::string text, SDL_Color color) {
-	//free any pre-existing hardTexture
-	free();
-
-	//final texture that will be assigned to 'hardTexture
-	SDL_Texture* finalTexture = NULL;
-
-	//the image created from the text that is inputted
-	SDL_Surface* loadedText = TTF_RenderText_Solid(globalFont, text.c_str(), color);
-
-	if (loadedText == NULL) {
-		printf("[LTexture::loadFromText] Failed to load text into image!\n");
-	}
-	else {
-		//create image from the text
-		finalTexture = SDL_CreateTextureFromSurface(globalRenderer, loadedText);
-
-		if (finalTexture == NULL) {
-			printf("[LTexture::loadFromText] Failed to create texture from given text!\n");
-		}
-		else {
-			//get image dimensions
-			imageWidth = loadedText->w;
-			imageHeight = loadedText->h;
-		}
-	}
-
-	//assign the text image to hardTexture
-	hardTexture = finalTexture;
-
-	//return if loading the text was successful
-	return hardTexture != NULL;
-}
-
-//set the blending mode of the texture
-void LTexture::setBlendingMode(SDL_BlendMode blend) {
-	//set the blending mode
-	SDL_SetTextureBlendMode(hardTexture, blend);
-}
-
-//set the alpha of the hardTexture
-void LTexture::setAlpha(Uint8 a) {
-	//set the alpha
-	SDL_SetTextureAlphaMod(hardTexture, a);
-}
-
-//set the color of the hardTexture
-void LTexture::setColor(Uint8 r, Uint8 g, Uint8 b) {
-	//set the color
-	SDL_SetTextureColorMod(hardTexture, r, g, b);
-}
-
-//render method - given coordinates, angle, point, flip status, clipping dimensions
-void LTexture::render(int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip) {
-	//set render space
-	SDL_Rect renderSpace = { x, y, imageWidth, imageHeight };
-
-	//if clipping, then reset the render space
-	if (clip != NULL) {
-		renderSpace.w = clip->w;
-		renderSpace.h = clip->h;
-	}
-
-	//render the image
-	SDL_RenderCopyEx(globalRenderer, hardTexture, clip, &renderSpace, angle, center, flip);
-}
-
-//get image width
-int LTexture::getWidth() {
-	return imageWidth;
-}
-
-//get image height
-int LTexture::getHeight() {
-	return imageHeight;
-}
 
 //LButton class methods
 ////constructor
@@ -372,7 +223,63 @@ bool LButton::handleEvent(SDL_Event* e) {
 
 ////render the button's current sprite
 void LButton::render() {
-	spriteSheet->render(position.x, position.y, &buttonSpriteClips[currentSprite]);
+	spriteSheet->render(globalRenderer, position.x, position.y, &buttonSpriteClips[currentSprite]);
+}
+
+//monster class methods
+////constructor
+Monster::Monster() {
+	//initialize everthang
+	name = "Skeleton"; //TEMPORARY
+	HP = 20;
+
+	//the LTexture --- later on write a method to assign an image from the bank corresponding to its name i.e: "Wretched Slime" goes with "slime.png" or something
+	if (!sprite.loadFromFile(globalRenderer, "assets/red_skeleton.png"))
+		printf("Failed to load skeleton sprite!\n");
+	if (!nameSprite.loadFromText(globalRenderer, globalFontSmall, name, white))
+		printf("Failed to load skeleton's name!\n");
+}
+
+////TEMP
+Monster::Monster(std::string s) {
+	name = s;
+	HP = 30;
+
+	if (!sprite.loadFromFile(globalRenderer, "assets/red_skeleton.png"))
+		printf("Failed to load red skeleton sprite!\n");
+	if (!nameSprite.loadFromText(globalRenderer, globalFontSmall, name, white))
+		printf("Failed to load red skeleton's name!\n");
+}
+
+////render the monster TODO: Make a spritesheet for each monster, not two separate pngs
+void Monster::render() {
+	sprite.render(globalRenderer, (SCREEN_WIDTH / 2) - (sprite.getWidth() / 2), 70);
+	nameSprite.render(globalRenderer, (SCREEN_WIDTH / 2) - (nameSprite.getWidth() / 2), 40);
+}
+
+////get monsters HP
+int Monster::getHP() {
+	return HP;
+}
+
+////deal damage to monster
+void Monster::dealDamage(int dmg) {
+	HP -= dmg;
+}
+
+////determine if the monster is alive or dead
+bool Monster::isAlive() {
+	if (this->getHP() <= 0) {
+		//sprite.loadFromFile("assets/skeleton_dead.png");
+		return false;
+	}
+
+	return true;
+}
+
+////get the monster's name
+std::string Monster::getName() {
+	return name;
 }
 
 //global methods
@@ -444,29 +351,44 @@ bool loadMedia() {
 	else {
 		//test rendering text
 		SDL_Color testColor = { 255, 255, 255 };
-		if (!mainText.loadFromText("REVOLUTION", testColor)) {
+		if (!mainText.loadFromText(globalRenderer, globalFont, "REVOLUTION", testColor)) {
 			printf("[loadMedia] Test failed for loading text!\n");
 			success = false;
 		}
 
-		goodJob.loadFromText("GOOD JOB!", testColor);
+		goodJob.loadFromText(globalRenderer, globalFont, "GOOD JOB!", testColor);
+	}
+
+	//global font (small)
+	globalFontSmall = TTF_OpenFont("fonts/BEBAS.ttf", 24);
+	if (globalFontSmall == NULL) {
+		printf("[loadMedia] Failed to load 'REVOLUTION' font!\n");
+		success = false;
+	}
+	else {
+		//test rendering text
+		SDL_Color testColor = { 255, 255, 255 };
+		if (!mainText.loadFromText(globalRenderer, globalFontSmall, "REVOLUTION", testColor)) {
+			printf("[loadMedia] Test failed for loading text!\n");
+			success = false;
+		}
 	}
 
 	//load main menu button spritesheets
 	////start button sprite sheet
-	if (!startButtonSpriteSheet.loadFromFile("assets/start_button.png")) {
+	if (!startButtonSpriteSheet.loadFromFile(globalRenderer, "assets/start_button.png")) {
 		printf("[loadMedia] Failed to load start button spritesheet!\n");
 		success = false;
 	}
 	
 	////options button
-	if (!optionsButtonSpriteSheet.loadFromFile("assets/options_button.png")) {
+	if (!optionsButtonSpriteSheet.loadFromFile(globalRenderer, "assets/options_button.png")) {
 		printf("[loadMedia] Failed to load options button spritesheet!\n");
 		success = false;
 	}
 
 	////help button
-	if (!helpButtonSpriteSheet.loadFromFile("assets/help_button.png")) {
+	if (!helpButtonSpriteSheet.loadFromFile(globalRenderer, "assets/help_button.png")) {
 		printf("[loadMedia] Failed to load help button spritesheet!\n");
 		success = false;
 	}
@@ -518,6 +440,15 @@ std::string getRandomWord(int level = 1) {
 	}
 }
 
+//get a new random monster
+Monster getNewMonster() {
+	Monster newMonster;
+	
+	
+
+	return newMonster;
+}
+
 //main method
 int main(int argc, char* args[]) {
 	if (!init()) {
@@ -546,7 +477,7 @@ int main(int argc, char* args[]) {
 			bool bGoodJob = false;
 
 			//initialize first word
-			currentWordTexture.loadFromText(currentWord, white);
+			currentWordTexture.loadFromText(globalRenderer, globalFont, currentWord, white);
 
 			//initialize menu buttons
 			LButton startButton, optionsButton, helpButton;
@@ -558,6 +489,10 @@ int main(int argc, char* args[]) {
 			startButton.setPosition((SCREEN_WIDTH / 2) - (BUTTON_WIDTH / 2), (SCREEN_HEIGHT / 2) + 20);
 			optionsButton.setPosition((SCREEN_WIDTH / 2) - (BUTTON_WIDTH / 2), (SCREEN_HEIGHT / 2) + BUTTON_HEIGHT + 28);
 			helpButton.setPosition((SCREEN_WIDTH / 2) - (BUTTON_WIDTH / 2), (SCREEN_HEIGHT / 2) + 2 * BUTTON_HEIGHT + 36);
+
+			//current monster
+			Monster nextMonster = Monster("red skeleton");
+			Monster& currentMonster = nextMonster;
 
 			//main loop
 			while (!quit) {
@@ -596,12 +531,20 @@ int main(int argc, char* args[]) {
 					SDL_RenderPresent(globalRenderer);
 				}
 				else {
+					printf("%i\n", currentMonster.getHP());
+
+					if (!currentMonster.isAlive()) {
+						currentMonster = getNewMonster();
+					}
+
 					//if current words length is 0 (no word), get a new word
 					if (getNewWord) {
 						currentWord = getRandomWord(1);
+						
 						getNewWord = false;
 					}
 
+					
 					//while there are events on the event queue
 					while (SDL_PollEvent(&e) != 0) {
 						//if user requests quit
@@ -711,6 +654,8 @@ int main(int argc, char* args[]) {
 					SDL_Rect backGround = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
 					SDL_SetRenderDrawColor(globalRenderer, 80, 90, 100, 255);
 					SDL_RenderFillRect(globalRenderer, &backGround);
+					
+					currentMonster.render();
 
 					if (currentWord.length() > 0) {
 						if (currentGuess == currentWord.substr(0, 1)) {
@@ -719,30 +664,28 @@ int main(int argc, char* args[]) {
 							}
 							else {
 								currentWord = " ";
-								bGoodJob = true;
+								//bGoodJob = true;
+								currentMonster.dealDamage(5);
+								getNewWord = true;
 							}
 						}
 					}
 
-					currentWordTexture.loadFromText(currentWord, white);
+					currentWordTexture.loadFromText(globalRenderer, globalFont, currentWord, white);
 
-					//if you finished a word, display "good job!" and you have to press spacebar to continue to the next word
+					/*//if you finished a word, display "good job!" and you have to press spacebar to continue to the next word
 					if (bGoodJob) {
-						goodJob.render((SCREEN_WIDTH - goodJob.getWidth()) / 2, (SCREEN_HEIGHT - goodJob.getHeight()) / 2);
+
+						goodJob.render((SCREEN_WIDTH - goodJob.getWidth()) / 2, 340);
 
 						if (e.key.keysym.sym == SDLK_SPACE || e.key.keysym.sym == SDLK_RETURN) {
 							getNewWord = true;
 							bGoodJob = false;
 						}
-					}
+					} */
 
 					//render current word
-					currentWordTexture.render((SCREEN_WIDTH - currentWordTexture.getWidth()) / 2, (SCREEN_HEIGHT - currentWordTexture.getHeight()) / 2);
-
-					/*//test for timer bar
-					SDL_SetRenderDrawColor(globalRenderer, 255, 0, 0, 255);
-					SDL_Rect timer = { 0, 0, 150, 30 };
-					SDL_RenderFillRect(globalRenderer, &timer); */
+					currentWordTexture.render(globalRenderer, (SCREEN_WIDTH - currentWordTexture.getWidth()) / 2, 340);
 
 					//update screen
 					SDL_RenderPresent(globalRenderer);
