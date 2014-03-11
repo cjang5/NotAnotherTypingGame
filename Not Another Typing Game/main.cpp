@@ -16,48 +16,6 @@ and may not be redistributed without written permission.*/
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
-////button constants
-const int BUTTON_WIDTH = 150;
-const int BUTTON_HEIGHT = 50;
-
-//sprites for each respective button state
-enum ButtonSprites {
-	BUTTON_NORMAL = 0,
-	BUTTON_HOVER = 1,
-	BUTTON_DOWN = 2,
-	BUTTON_UP = 3,
-	BUTTON_SPRITE_TOTAL = 4
-};
-
-//LButton class
-class LButton {
-public:
-	//constructor
-	LButton();
-
-	//set the (x, y) position of the button
-	void setPosition(int x, int y);
-
-	//assign a spritesheet to the button
-	void setSpriteSheet(LTexture* sheet);
-
-	//handle different events
-	bool handleEvent(SDL_Event* e);
-
-	//render the button at its set position
-	void render();
-
-private:
-	//(x, y) position
-	SDL_Point position;
-
-	//this button's spritesheet
-	LTexture* spriteSheet;
-
-	//the current sprite of the button
-	ButtonSprites currentSprite;
-};
-
 //Monster class
 class Monster {
 public:
@@ -124,21 +82,6 @@ std::string level1[] = {"HELLO", "BOY", "WARRIOR", "EDMUND", "MEATBOY", "INDIE",
 						"BASIC", "RANDOM", "KEY", "AND", "BOOK", "SPELL", "GUN", "RPG", "TWEET", "FLAPPY", "BIRD", "TIME", "WARP", "BUNNY", "MARIO",
 						"SUPER", "MEGA", "AWE", "TO", "THE", "WHAT", "NOOB", "OMG"};
 
-//main menu
-////the number of buttons on the main menu
-const int MAIN_NUM_BUTTONS = 3;
-
-////Sprite clipping Rects
-SDL_Rect buttonSpriteClips[BUTTON_SPRITE_TOTAL];
-
-////Spritesheet for main menu buttons
-LTexture startButtonSpriteSheet;
-LTexture optionsButtonSpriteSheet;
-LTexture helpButtonSpriteSheet;
-
-////Main menu button objects
-LButton mainButtons[MAIN_NUM_BUTTONS];
-
 //global method forward declarations
 ////initializer
 bool init();
@@ -146,85 +89,6 @@ bool init();
 bool loadMedia();
 ////closes everything
 void close();
-
-//LButton class methods
-////constructor
-LButton::LButton() {
-	//initialize button's position
-	position.x = 0;
-	position.y = 0;
-
-	//initialize its current sprite
-	currentSprite = BUTTON_NORMAL;
-}
-
-////set the position (x, y)
-void LButton::setPosition(int x, int y) {
-	position.x = x;
-	position.y = y;
-}
-
-////set the spritesheet
-void LButton::setSpriteSheet(LTexture* sheet) {
-	spriteSheet = sheet;
-}
-
-////handleEvent
-bool LButton::handleEvent(SDL_Event* e) {
-	//if a mouse event took place
-	if (e->type == SDL_MOUSEMOTION || e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP) {
-		//get cursor position
-		int x, y;
-		SDL_GetMouseState(&x, &y);
-
-		//check if the cursor is inside the button dimensions
-		bool inside = true; //initialized to true
-
-		////if cursor is to the left
-		if (x < position.x) {
-			inside = false;
-		}
-		////if cursor is to the right
-		else if (x > position.x + BUTTON_WIDTH) {
-			inside = false;
-		}
-		////if cursor is above
-		else if (y < position.y) {
-			inside = false;
-		}
-		////if cursor is below
-		else if (y > position.y + BUTTON_HEIGHT) {
-			inside = false;
-		}
-
-		//if mouse is outside
-		if (!inside) {
-			currentSprite = BUTTON_NORMAL;
-		}
-		//otherwise, if it's outside
-		else {
-			switch (e->type) {
-			case SDL_MOUSEMOTION:
-				currentSprite = BUTTON_HOVER;
-				break;
-			case SDL_MOUSEBUTTONDOWN:
-				currentSprite = BUTTON_DOWN;
-				break;
-			case SDL_MOUSEBUTTONUP:
-				currentSprite = BUTTON_UP;
-				return true;
-				break;
-			}
-		}
-	}
-
-	return false;
-}
-
-////render the button's current sprite
-void LButton::render() {
-	spriteSheet->render(globalRenderer, position.x, position.y, &buttonSpriteClips[currentSprite]);
-}
 
 //monster class methods
 ////constructor
@@ -374,33 +238,6 @@ bool loadMedia() {
 		}
 	}
 
-	//load main menu button spritesheets
-	////start button sprite sheet
-	if (!startButtonSpriteSheet.loadFromFile(globalRenderer, "assets/start_button.png")) {
-		printf("[loadMedia] Failed to load start button spritesheet!\n");
-		success = false;
-	}
-	
-	////options button
-	if (!optionsButtonSpriteSheet.loadFromFile(globalRenderer, "assets/options_button.png")) {
-		printf("[loadMedia] Failed to load options button spritesheet!\n");
-		success = false;
-	}
-
-	////help button
-	if (!helpButtonSpriteSheet.loadFromFile(globalRenderer, "assets/help_button.png")) {
-		printf("[loadMedia] Failed to load help button spritesheet!\n");
-		success = false;
-	}
-
-	////get Sprite clips
-	for (int i = 0; i < BUTTON_SPRITE_TOTAL; i++) {
-		buttonSpriteClips[i].x = i * 150;
-		buttonSpriteClips[i].y = 0;
-		buttonSpriteClips[i].w = BUTTON_WIDTH;
-		buttonSpriteClips[i].h = BUTTON_HEIGHT;
-	}
-
 	return success;
 }
 
@@ -408,9 +245,6 @@ bool loadMedia() {
 void close() {
 	//destroy the textures
 	mainText.free();
-	startButtonSpriteSheet.free();
-	optionsButtonSpriteSheet.free();
-	helpButtonSpriteSheet.free();
 
 	//close fonts in use
 	TTF_CloseFont(globalFont);
@@ -479,223 +313,176 @@ int main(int argc, char* args[]) {
 			//initialize first word
 			currentWordTexture.loadFromText(globalRenderer, globalFont, currentWord, white);
 
-			//initialize menu buttons
-			LButton startButton, optionsButton, helpButton;
-			////spriteSheets
-			startButton.setSpriteSheet(&startButtonSpriteSheet);
-			optionsButton.setSpriteSheet(&optionsButtonSpriteSheet);
-			helpButton.setSpriteSheet(&helpButtonSpriteSheet);
-			////positions
-			startButton.setPosition((SCREEN_WIDTH / 2) - (BUTTON_WIDTH / 2), (SCREEN_HEIGHT / 2) + 20);
-			optionsButton.setPosition((SCREEN_WIDTH / 2) - (BUTTON_WIDTH / 2), (SCREEN_HEIGHT / 2) + BUTTON_HEIGHT + 28);
-			helpButton.setPosition((SCREEN_WIDTH / 2) - (BUTTON_WIDTH / 2), (SCREEN_HEIGHT / 2) + 2 * BUTTON_HEIGHT + 36);
-
 			//current monster
 			Monster nextMonster = Monster("red skeleton");
 			Monster& currentMonster = nextMonster;
 
 			//main loop
 			while (!quit) {
-				//if user is in the main menu
-				if (inMenu) {
-					while (SDL_PollEvent(&e) != 0) {
-						//if user clicks x
-						if (e.type == SDL_QUIT)
-							quit = true;
+				printf("%i\n", currentMonster.getHP());
 
-						if (e.key.keysym.sym == SDLK_ESCAPE)
-							quit = true;
-
-						if (e.key.keysym.sym == SDLK_RETURN)
-							inMenu = false;
-
-						//handle button events
-						if (startButton.handleEvent(&e))
-							inMenu = false;
-						optionsButton.handleEvent(&e);
-						helpButton.handleEvent(&e);
-					}
-
-					SDL_RenderClear(globalRenderer);
-
-					//main background
-					SDL_Rect backGround = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
-					SDL_SetRenderDrawColor(globalRenderer, 80, 90, 100, 255);
-					SDL_RenderFillRect(globalRenderer, &backGround);
-
-					//render the buttons
-					startButton.render();
-					optionsButton.render();
-					helpButton.render();
-
-					SDL_RenderPresent(globalRenderer);
+				if (!currentMonster.isAlive()) {
+					currentMonster = getNewMonster();
 				}
-				else {
-					printf("%i\n", currentMonster.getHP());
 
-					if (!currentMonster.isAlive()) {
-						currentMonster = getNewMonster();
-					}
-
-					//if current words length is 0 (no word), get a new word
-					if (getNewWord) {
-						currentWord = getRandomWord(1);
+				//if current words length is 0 (no word), get a new word
+				if (getNewWord) {
+					currentWord = getRandomWord(1);
 						
-						getNewWord = false;
-					}
-
-					
-					//while there are events on the event queue
-					while (SDL_PollEvent(&e) != 0) {
-						//if user requests quit
-						if (e.type == SDL_QUIT) {
-							quit = true;
-						}
-
-						//if a key is pressed
-						if (e.type == SDL_KEYDOWN) {
-							//event based on what key is pressed
-							switch (e.key.keysym.sym) {
-							case SDLK_ESCAPE:
-								quit = true;
-								break;
-							case SDLK_a:
-								currentGuess = "A";
-								break;
-							case SDLK_b:
-								currentGuess = "B";
-								break;
-							case SDLK_c:
-								currentGuess = "C";
-								break;
-							case SDLK_d:
-								currentGuess = "D";
-								break;
-							case SDLK_e:
-								currentGuess = "E";
-								break;
-							case SDLK_f:
-								currentGuess = "F";
-								break;
-							case SDLK_g:
-								currentGuess = "G";
-								break;
-							case SDLK_h:
-								currentGuess = "H";
-								break;
-							case SDLK_i:
-								currentGuess = "I";
-								break;
-							case SDLK_j:
-								currentGuess = "J";
-								break;
-							case SDLK_k:
-								currentGuess = "K";
-								break;
-							case SDLK_l:
-								currentGuess = "L";
-								break;
-							case SDLK_m:
-								currentGuess = "M";
-								break;
-							case SDLK_n:
-								currentGuess = "N";
-								break;
-							case SDLK_o:
-								currentGuess = "O";
-								break;
-							case SDLK_p:
-								currentGuess = "P";
-								break;
-							case SDLK_q:
-								currentGuess = "Q";
-								break;
-							case SDLK_r:
-								currentGuess = "R";
-								break;
-							case SDLK_s:
-								currentGuess = "S";
-								break;
-							case SDLK_t:
-								currentGuess = "T";
-								break;
-							case SDLK_u:
-								currentGuess = "U";
-								break;
-							case SDLK_v:
-								currentGuess = "V";
-								break;
-							case SDLK_w:
-								currentGuess = "W";
-								break;
-							case SDLK_x:
-								currentGuess = "X";
-								break;
-							case SDLK_y:
-								currentGuess = "Y";
-								break;
-							case SDLK_z:
-								currentGuess = "Z";
-								break;
-							case SDLK_SPACE:
-								currentGuess = " ";
-								break;
-							}
-						}
-					}
-
-					//draw color
-					SDL_SetRenderDrawColor(globalRenderer, 255, 255, 255, 255);
-
-					//clear renderer
-					SDL_RenderClear(globalRenderer);
-
-					//main background
-					SDL_Rect backGround = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
-					SDL_SetRenderDrawColor(globalRenderer, 80, 90, 100, 255);
-					SDL_RenderFillRect(globalRenderer, &backGround);
-					
-					currentMonster.render();
-
-					if (currentWord.length() > 0) {
-						if (currentGuess == currentWord.substr(0, 1)) {
-							if (currentWord.length() > 1) {
-								currentWord = currentWord.substr(1, currentWord.length() - 1);
-							}
-							else {
-								currentWord = " ";
-								//bGoodJob = true;
-								currentMonster.dealDamage(5);
-								getNewWord = true;
-							}
-						}
-					}
-
-					currentWordTexture.loadFromText(globalRenderer, globalFont, currentWord, white);
-
-					/*//if you finished a word, display "good job!" and you have to press spacebar to continue to the next word
-					if (bGoodJob) {
-
-						goodJob.render((SCREEN_WIDTH - goodJob.getWidth()) / 2, 340);
-
-						if (e.key.keysym.sym == SDLK_SPACE || e.key.keysym.sym == SDLK_RETURN) {
-							getNewWord = true;
-							bGoodJob = false;
-						}
-					} */
-
-					//render current word
-					currentWordTexture.render(globalRenderer, (SCREEN_WIDTH - currentWordTexture.getWidth()) / 2, 340);
-
-					//update screen
-					SDL_RenderPresent(globalRenderer);
-
-					//reset current guess
-					currentGuess = "";
+					getNewWord = false;
 				}
+	
+				//while there are events on the event queue
+				while (SDL_PollEvent(&e) != 0) {
+					//if user requests quit
+					if (e.type == SDL_QUIT) {
+						quit = true;
+					}
+
+					//if a key is pressed
+					if (e.type == SDL_KEYDOWN) {
+						//event based on what key is pressed
+						switch (e.key.keysym.sym) {
+						case SDLK_ESCAPE:
+							quit = true;
+							break;
+						case SDLK_a:
+							currentGuess = "A";
+							break;
+						case SDLK_b:
+							currentGuess = "B";
+							break;
+						case SDLK_c:
+							currentGuess = "C";
+							break;
+						case SDLK_d:
+							currentGuess = "D";
+							break;
+						case SDLK_e:
+							currentGuess = "E";
+							break;
+						case SDLK_f:
+							currentGuess = "F";
+							break;
+						case SDLK_g:
+							currentGuess = "G";
+							break;
+						case SDLK_h:
+							currentGuess = "H";
+							break;
+						case SDLK_i:
+							currentGuess = "I";
+							break;
+						case SDLK_j:
+							currentGuess = "J";
+							break;
+						case SDLK_k:
+							currentGuess = "K";
+							break;
+						case SDLK_l:
+							currentGuess = "L";
+							break;
+						case SDLK_m:
+							currentGuess = "M";
+							break;
+						case SDLK_n:
+							currentGuess = "N";
+							break;
+						case SDLK_o:
+							currentGuess = "O";
+							break;
+						case SDLK_p:
+							currentGuess = "P";
+							break;
+						case SDLK_q:
+							currentGuess = "Q";
+							break;
+						case SDLK_r:
+							currentGuess = "R";
+							break;
+						case SDLK_s:
+							currentGuess = "S";
+							break;
+						case SDLK_t:
+							currentGuess = "T";
+							break;
+						case SDLK_u:
+							currentGuess = "U";
+							break;
+						case SDLK_v:
+							currentGuess = "V";
+							break;
+						case SDLK_w:
+							currentGuess = "W";
+							break;
+						case SDLK_x:
+							currentGuess = "X";
+							break;
+						case SDLK_y:
+							currentGuess = "Y";
+							break;
+						case SDLK_z:
+							currentGuess = "Z";
+							break;
+						case SDLK_SPACE:
+							currentGuess = " ";
+							break;
+						}
+					}
+				}
+
+				//draw color
+				SDL_SetRenderDrawColor(globalRenderer, 255, 255, 255, 255);
+
+				//clear renderer
+				SDL_RenderClear(globalRenderer);
+
+				//main background
+				SDL_Rect backGround = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+				SDL_SetRenderDrawColor(globalRenderer, 80, 90, 100, 255);
+				SDL_RenderFillRect(globalRenderer, &backGround);
+
+				currentMonster.render();
+
+				if (currentWord.length() > 0) {
+					if (currentGuess == currentWord.substr(0, 1)) {
+						if (currentWord.length() > 1) {
+							currentWord = currentWord.substr(1, currentWord.length() - 1);
+						}
+						else {
+							currentWord = " ";
+							//bGoodJob = true;
+							currentMonster.dealDamage(5);
+							getNewWord = true;
+						}
+					}
+				}
+
+				currentWordTexture.loadFromText(globalRenderer, globalFont, currentWord, white);
+
+				/*//if you finished a word, display "good job!" and you have to press spacebar to continue to the next word
+				if (bGoodJob) {
+
+				goodJob.render((SCREEN_WIDTH - goodJob.getWidth()) / 2, 340);
+
+				if (e.key.keysym.sym == SDLK_SPACE || e.key.keysym.sym == SDLK_RETURN) {
+				getNewWord = true;
+				bGoodJob = false;
+				}
+				} */
+
+				//render current word
+				currentWordTexture.render(globalRenderer, (SCREEN_WIDTH - currentWordTexture.getWidth()) / 2, 340);
+
+				//update screen
+				SDL_RenderPresent(globalRenderer);
+
+				//reset current guess
+				currentGuess = "";
 			}
 		}
 	}
+	
 
 	close();
 
