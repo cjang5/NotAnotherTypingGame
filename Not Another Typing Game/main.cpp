@@ -19,14 +19,25 @@ const int SCREEN_HEIGHT = 480;
 //Monster class
 class Monster {
 public:
-	//constructor
+	//default constructor
 	Monster();
 
-	//TEMP CONSTRUCTOR
+	//constructor; name
 	Monster(std::string s);
 
+	//initialize
+	void initialize(SDL_Renderer* renderer);
+
+	//enum for monster states
+	enum MonsterStates {
+		ALIVE,
+		HIT,
+		DEAD, 
+		TOTAL
+	};
+
 	//render the monster
-	void render();
+	void render(SDL_Renderer* renderer);
 
 	//get HP
 	int getHP();
@@ -34,8 +45,14 @@ public:
 	//get monster's name
 	std::string getName();
 
+	//set texture
+	//void setTexture(SDL_Renderer* renderer, std::string path);
+
 	//deal damage to monster
 	void dealDamage(int dmg);
+
+	//handle events
+	void handleEvent();
 
 	//is the monster alive?
 	bool isAlive();
@@ -49,7 +66,11 @@ private:
 	LTexture nameSprite;
 
 	//Monsters sprite
-	LTexture sprite;
+	LTexture spriteSheet;
+
+	MonsterStates state;
+
+	SDL_Rect clip[TOTAL];
 };
 
 //sdl variables
@@ -91,17 +112,14 @@ bool loadMedia();
 void close();
 
 //monster class methods
-////constructor
+////default constructor
 Monster::Monster() {
 	//initialize everthang
 	name = "Skeleton"; //TEMPORARY
 	HP = 20;
 
+	state = ALIVE;
 	//the LTexture --- later on write a method to assign an image from the bank corresponding to its name i.e: "Wretched Slime" goes with "slime.png" or something
-	if (!sprite.loadFromFile(globalRenderer, "assets/red_skeleton.png"))
-		printf("Failed to load skeleton sprite!\n");
-	if (!nameSprite.loadFromText(globalRenderer, globalFontSmall, name, white))
-		printf("Failed to load skeleton's name!\n");
 }
 
 ////TEMP
@@ -109,16 +127,47 @@ Monster::Monster(std::string s) {
 	name = s;
 	HP = 30;
 
-	if (!sprite.loadFromFile(globalRenderer, "assets/red_skeleton.png"))
-		printf("Failed to load red skeleton sprite!\n");
-	if (!nameSprite.loadFromText(globalRenderer, globalFontSmall, name, white))
-		printf("Failed to load red skeleton's name!\n");
+	state = ALIVE;
+}
+
+//initialize
+void Monster::initialize(SDL_Renderer* renderer) {
+	if (name == "red skeleton") {
+		spriteSheet.loadFromFile(renderer, "assets/red_skeleton.png");
+		nameSprite.loadFromText(renderer, globalFontSmall, name, white);
+		for (int i = 0; i < TOTAL; i++) {
+			clip[i].x = i * 200;
+			clip[i].y = 0;
+			clip[i].w = 200;
+			clip[i].h = 250;
+		}
+	}
+	else if (name == "boring skeleton") {
+		spriteSheet.loadFromFile(renderer, "assets/white_skeleton.png");
+		nameSprite.loadFromText(renderer, globalFontSmall, name, white);
+		for (int i = 0; i < TOTAL; i++) {
+			clip[i].x = i * 200;
+			clip[i].y = 0;
+			clip[i].w = 200;
+			clip[i].h = 250;
+		}
+	}
+	else if (name == "green skeleton") {
+		spriteSheet.loadFromFile(renderer, "assets/green_skeleton.png");
+		nameSprite.loadFromText(renderer, globalFontSmall, name, white);
+		for (int i = 0; i < TOTAL; i++) {
+			clip[i].x = i * 200;
+			clip[i].y = 0;
+			clip[i].w = 200;
+			clip[i].h = 250;
+		}
+	}
 }
 
 ////render the monster TODO: Make a spritesheet for each monster, not two separate pngs
-void Monster::render() {
-	sprite.render(globalRenderer, (SCREEN_WIDTH / 2) - (sprite.getWidth() / 2), 70);
-	nameSprite.render(globalRenderer, (SCREEN_WIDTH / 2) - (nameSprite.getWidth() / 2), 40);
+void Monster::render(SDL_Renderer* renderer) {
+	spriteSheet.render(renderer, (SCREEN_WIDTH / 2) - (spriteSheet.getWidth() / 6), 70, &clip[state]);
+	nameSprite.render(renderer, (SCREEN_WIDTH / 2) - (nameSprite.getWidth() / 2), 40);
 }
 
 ////get monsters HP
@@ -129,17 +178,34 @@ int Monster::getHP() {
 ////deal damage to monster
 void Monster::dealDamage(int dmg) {
 	HP -= dmg;
+	state = HIT;
 }
 
 ////determine if the monster is alive or dead
 bool Monster::isAlive() {
-	if (this->getHP() <= 0) {
-		//sprite.loadFromFile("assets/skeleton_dead.png");
+	if (HP <= 0) {
 		return false;
 	}
 
 	return true;
 }
+
+////handle event
+void Monster::handleEvent() {
+	if (!isAlive()) {
+		//sprite.loadFromFile(globalRenderer, "assets/skeleton_dead.png");
+		state = DEAD;
+	}
+	else {
+		state = ALIVE;
+	}
+}
+
+////set texture
+/*void Monster::setTexture(SDL_Renderer* renderer, std::string path) {
+	sprite.loadFromFile(renderer, path.c_str());
+	nameSprite.loadFromText(renderer, globalFontSmall, name, white);
+}*/
 
 ////get the monster's name
 std::string Monster::getName() {
@@ -275,10 +341,15 @@ std::string getRandomWord(int level = 1) {
 }
 
 //get a new random monster
-Monster getNewMonster() {
+Monster getNewMonster(int n) {
 	Monster newMonster;
-	
-	
+
+	if (n == 1)
+		newMonster = Monster("boring skeleton");
+	else if (n == 2)
+		newMonster = Monster("red skeleton");
+	else
+		newMonster = Monster("green skeleton");
 
 	return newMonster;
 }
@@ -313,22 +384,34 @@ int main(int argc, char* args[]) {
 			//initialize first word
 			currentWordTexture.loadFromText(globalRenderer, globalFont, currentWord, white);
 
-			//current monster
-			Monster nextMonster = Monster("red skeleton");
-			Monster& currentMonster = nextMonster;
+			int n;
+			srand(time(NULL));
+			Monster monsters[5];
+			for (int i = 0; i < 5; i++) {
+				n = rand() % 3;
+				monsters[i] = getNewMonster(n);
+				monsters[i].initialize(globalRenderer);
+			}
 
+			int current = 0;
+			//current monster
+			Monster *currentMonster = &monsters[current];
+
+			bool getNew = false;
+			//TEMP
+			printf("%i\n", currentMonster->getHP());
 			//main loop
 			while (!quit) {
-				printf("%i\n", currentMonster.getHP());
-
-				if (!currentMonster.isAlive()) {
-					currentMonster = getNewMonster();
+				
+				if (getNew) {
+					currentMonster = &monsters[current];
+					getNew = false;
 				}
-
 				//if current words length is 0 (no word), get a new word
 				if (getNewWord) {
+					currentMonster->handleEvent();
+					printf("%i\n", currentMonster->getHP());
 					currentWord = getRandomWord(1);
-						
 					getNewWord = false;
 				}
 	
@@ -442,7 +525,7 @@ int main(int argc, char* args[]) {
 				SDL_SetRenderDrawColor(globalRenderer, 80, 90, 100, 255);
 				SDL_RenderFillRect(globalRenderer, &backGround);
 
-				currentMonster.render();
+				
 
 				if (currentWord.length() > 0) {
 					if (currentGuess == currentWord.substr(0, 1)) {
@@ -450,14 +533,21 @@ int main(int argc, char* args[]) {
 							currentWord = currentWord.substr(1, currentWord.length() - 1);
 						}
 						else {
+							if (!currentMonster->isAlive()) {
+								current++;
+								if (current > 4)
+									quit = true;
+								getNew = true;
+							}
 							currentWord = " ";
 							//bGoodJob = true;
-							currentMonster.dealDamage(5);
+							currentMonster->dealDamage(5);
 							getNewWord = true;
 						}
 					}
 				}
 
+				currentMonster->render(globalRenderer);
 				currentWordTexture.loadFromText(globalRenderer, globalFont, currentWord, white);
 
 				/*//if you finished a word, display "good job!" and you have to press spacebar to continue to the next word
@@ -483,7 +573,6 @@ int main(int argc, char* args[]) {
 		}
 	}
 	
-
 	close();
 
 	return 0;
