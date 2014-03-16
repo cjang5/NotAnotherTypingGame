@@ -51,6 +51,9 @@ public:
 	//deal damage to monster
 	void dealDamage(int dmg);
 
+	//change monsters state
+	void changeState(int m);
+
 	//handle events
 	void handleEvent();
 
@@ -179,6 +182,24 @@ int Monster::getHP() {
 void Monster::dealDamage(int dmg) {
 	HP -= dmg;
 	state = HIT;
+}
+
+////change monster's state
+void Monster::changeState(int m) {
+	switch (m) {
+	case 0:
+		state = ALIVE;
+		break;
+	case 1:
+		state = HIT;
+		break;
+	case 2:
+		state = DEAD;
+		break;
+	default:
+		state = ALIVE;
+		break;
+	}
 }
 
 ////determine if the monster is alive or dead
@@ -393,6 +414,10 @@ int main(int argc, char* args[]) {
 				monsters[i].initialize(globalRenderer);
 			}
 
+			//current ticks
+			Uint32 currentTicks = 0;
+			int hurtFrame = 0;
+
 			int current = 0;
 			//current monster
 			Monster *currentMonster = &monsters[current];
@@ -402,7 +427,6 @@ int main(int argc, char* args[]) {
 			printf("%i\n", currentMonster->getHP());
 			//main loop
 			while (!quit) {
-				
 				if (getNew) {
 					currentMonster = &monsters[current];
 					getNew = false;
@@ -525,29 +549,65 @@ int main(int argc, char* args[]) {
 				SDL_SetRenderDrawColor(globalRenderer, 80, 90, 100, 255);
 				SDL_RenderFillRect(globalRenderer, &backGround);
 
-				
-
 				if (currentWord.length() > 0) {
+					//printf("H"); 
 					if (currentGuess == currentWord.substr(0, 1)) {
 						if (currentWord.length() > 1) {
 							currentWord = currentWord.substr(1, currentWord.length() - 1);
 						}
 						else {
+
+							//get next monster
 							if (!currentMonster->isAlive()) {
 								current++;
 								if (current > 4)
 									quit = true;
 								getNew = true;
 							}
-							currentWord = " ";
+
+							currentWord = "";
 							//bGoodJob = true;
 							currentMonster->dealDamage(5);
-							getNewWord = true;
+
+							currentTicks = SDL_GetTicks();
 						}
+					}
+				}
+				else {
+					//hurt animation
+					switch (hurtFrame) {
+					case 0:
+						if (SDL_GetTicks() - currentTicks > 50) {
+							currentMonster->changeState(0);
+							currentTicks = SDL_GetTicks();
+							hurtFrame++;
+						}
+						break;
+					case 1:
+						if (SDL_GetTicks() - currentTicks > 50) {
+							currentMonster->changeState(1);
+							currentTicks = SDL_GetTicks();
+							hurtFrame++;
+						}
+						break;
+					case 2:
+						if (SDL_GetTicks() - currentTicks > 50) {
+							currentMonster->changeState(0);
+							currentTicks = SDL_GetTicks();
+							hurtFrame++;
+						}
+						break;
+					}	
+
+					//if hurt animation is over
+					if (hurtFrame == 3) {
+						hurtFrame = 0;
+						getNewWord = true;
 					}
 				}
 
 				currentMonster->render(globalRenderer);
+
 				currentWordTexture.loadFromText(globalRenderer, globalFont, currentWord, white);
 
 				/*//if you finished a word, display "good job!" and you have to press spacebar to continue to the next word
