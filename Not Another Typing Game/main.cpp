@@ -11,10 +11,14 @@ and may not be redistributed without written permission.*/
 #include <stdlib.h> //for rand(), srand()
 #include <time.h> //for time - rand seed
 #include "LTexture.h"
+#include <sstream> //for appending the opportunity timer (int) to a string
 
 //window dimensions
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
+
+//the opportunity timer
+int opportunity = 0; //initialize opportunity to monster level
 
 //Monster class
 class Monster {
@@ -405,6 +409,7 @@ int main(int argc, char* args[]) {
 			//initialize first word
 			currentWordTexture.loadFromText(globalRenderer, globalFont, currentWord, white);
 
+			//generate 5 random monsters
 			int n;
 			srand(time(NULL));
 			Monster monsters[5];
@@ -418,16 +423,34 @@ int main(int argc, char* args[]) {
 			Uint32 currentTicks = 0;
 			int hurtFrame = 0;
 
+			//current monster out of 5
 			int current = 0;
 			//current monster
 			Monster *currentMonster = &monsters[current];
 
+			//get the next monster if the current one is dead
 			bool getNew = false;
+
+			//initialize oppTimer
+			opportunity = 10000; //10s
+			int oppReset = SDL_GetTicks();
+			//string to hold the current opp
+			std::string opportunityString;
+			//opportunity texture
+			LTexture opportunityTexture;
+
 			//TEMP
 			printf("%i\n", currentMonster->getHP());
+
 			//main loop
 			while (!quit) {
+				//if you need to get a new monster, get a new one
 				if (getNew) {
+					//reset oppReset time and opportunity
+					oppReset = SDL_GetTicks();
+					opportunity = 10000;
+
+					//get next monster
 					currentMonster = &monsters[current];
 					getNew = false;
 				}
@@ -549,6 +572,7 @@ int main(int argc, char* args[]) {
 				SDL_SetRenderDrawColor(globalRenderer, 80, 90, 100, 255);
 				SDL_RenderFillRect(globalRenderer, &backGround);
 
+				//check if you have completed a word or not
 				if (currentWord.length() > 0) {
 					//printf("H"); 
 					if (currentGuess == currentWord.substr(0, 1)) {
@@ -606,26 +630,46 @@ int main(int argc, char* args[]) {
 					}
 				}
 
+				//render current monster
 				currentMonster->render(globalRenderer);
 
+				//load the current word
 				currentWordTexture.loadFromText(globalRenderer, globalFont, currentWord, white);
+
+				//init oppString
+				opportunityString = std::to_string(opportunity);
+
+				//opportunity timer
+				opportunityTexture.loadFromText(globalRenderer, globalFont, opportunityString, white);
 
 				/*//if you finished a word, display "good job!" and you have to press spacebar to continue to the next word
 				if (bGoodJob) {
 
-				goodJob.render((SCREEN_WIDTH - goodJob.getWidth()) / 2, 340);
+					goodJob.render((SCREEN_WIDTH - goodJob.getWidth()) / 2, 340);
 
-				if (e.key.keysym.sym == SDLK_SPACE || e.key.keysym.sym == SDLK_RETURN) {
-				getNewWord = true;
-				bGoodJob = false;
-				}
+					if (e.key.keysym.sym == SDLK_SPACE || e.key.keysym.sym == SDLK_RETURN) {
+						getNewWord = true;
+						bGoodJob = false;
+					}
 				} */
 
 				//render current word
 				currentWordTexture.render(globalRenderer, (SCREEN_WIDTH - currentWordTexture.getWidth()) / 2, 340);
 
+				//render opportunity timer
+				opportunityTexture.render(globalRenderer, 500, 70);
+
 				//update screen
 				SDL_RenderPresent(globalRenderer);
+
+				//decrement opportunity timer -- make sure it doesn't go below 0
+				if (opportunity - 1 < 0) {
+					opportunity = 0;
+				}
+				else {
+					//update opportunity
+					opportunity = 10000 - (SDL_GetTicks() - oppReset);
+				}
 
 				//reset current guess
 				currentGuess = "";
