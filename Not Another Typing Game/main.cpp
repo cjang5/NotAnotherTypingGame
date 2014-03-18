@@ -105,6 +105,10 @@ SDL_Color white = { 255, 255, 255 };
 //'good job!'
 LTexture goodJob;
 
+//Opp Bar
+LTexture opportunityLTexture;
+SDL_Rect opportunityRect[201];
+
 //Level 1 word bank
 std::string level1[] = {"HELLO", "BOY", "WARRIOR", "EDMUND", "MEATBOY", "INDIE", "FEZ", "SPACE", "PIXEL", "TERRAIN", "FUN", "DEVELOP", "ARCADE",
 						"BASIC", "RANDOM", "KEY", "AND", "BOOK", "SPELL", "GUN", "RPG", "TWEET", "FLAPPY", "BIRD", "TIME", "WARP", "BUNNY", "MARIO",
@@ -175,6 +179,7 @@ void Monster::initialize(SDL_Renderer* renderer) {
 void Monster::render(SDL_Renderer* renderer) {
 	spriteSheet.render(renderer, (SCREEN_WIDTH / 2) - (spriteSheet.getWidth() / 6), 70, &clip[state]);
 	nameSprite.render(renderer, (SCREEN_WIDTH / 2) - (nameSprite.getWidth() / 2), 40);
+	//printf("%i\n", nameSprite.getHeight());
 }
 
 ////get monsters HP
@@ -329,6 +334,21 @@ bool loadMedia() {
 		}
 	}
 
+	//opportunity bar
+	if (!opportunityLTexture.loadFromFile(globalRenderer, "assets/opportunity_bar spritesheet.png")) {
+		printf("[loadMedia] Failed to load opportunity bar spritesheet!\n");
+		success = false;
+	}
+	else {
+		//initialize the sprite sheet Rects
+		for (int i = 0; i <= 100; i++) {
+			opportunityRect[i].x = (i % 10) * 200;
+			opportunityRect[i].y = (i / 10) * 40;
+			opportunityRect[i].w = 200;
+			opportunityRect[i].h = 40;
+		}
+	}
+
 	return success;
 }
 
@@ -441,7 +461,7 @@ int main(int argc, char* args[]) {
 
 			//TEMP
 			printf("%i\n", currentMonster->getHP());
-
+			
 			//main loop
 			while (!quit) {
 				//if you need to get a new monster, get a new one
@@ -637,10 +657,11 @@ int main(int argc, char* args[]) {
 				currentWordTexture.loadFromText(globalRenderer, globalFont, currentWord, white);
 
 				//init oppString
-				opportunityString = std::to_string(opportunity);
+				//opportunityString = std::to_string(opportunity);
 
 				//opportunity timer
-				opportunityTexture.loadFromText(globalRenderer, globalFont, opportunityString, white);
+				//opportunityTexture.loadFromText(globalRenderer, globalFont, opportunityString, white);
+				
 
 				/*//if you finished a word, display "good job!" and you have to press spacebar to continue to the next word
 				if (bGoodJob) {
@@ -657,7 +678,9 @@ int main(int argc, char* args[]) {
 				currentWordTexture.render(globalRenderer, (SCREEN_WIDTH - currentWordTexture.getWidth()) / 2, 340);
 
 				//render opportunity timer
-				opportunityTexture.render(globalRenderer, 500, 70);
+				printf("%i\n", opportunity);
+				//opportunityTexture.render(globalRenderer, 500, 30);
+				opportunityLTexture.render(globalRenderer, 400, 70, &opportunityRect[opportunity / 100]);
 
 				//update screen
 				SDL_RenderPresent(globalRenderer);
