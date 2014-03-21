@@ -106,8 +106,11 @@ SDL_Color white = { 255, 255, 255 };
 LTexture goodJob;
 
 //Opp Bar
+LTexture opportunityShellTexture;
 LTexture opportunityLTexture;
-SDL_Rect opportunityRect[201];
+SDL_Rect opportunityRect[101];
+LTexture opportunityReductionTexture;
+SDL_Rect opportunityReductionRect[101];
 
 //Level 1 word bank
 std::string level1[] = {"HELLO", "BOY", "WARRIOR", "EDMUND", "MEATBOY", "INDIE", "FEZ", "SPACE", "PIXEL", "TERRAIN", "FUN", "DEVELOP", "ARCADE",
@@ -349,6 +352,26 @@ bool loadMedia() {
 		}
 	}
 
+	//opportunity bar reduction texture
+	if (!opportunityReductionTexture.loadFromFile(globalRenderer, "assets/opportunity_bar reduction spritesheet.png")) {
+		printf("[loadMedia] Failed to load oppBar reduction sheet!\n");
+		success = false;
+	}
+	else {
+		//initialize the reduction sprite sheet Rects
+		for (int i = 0; i <= 100; i++) {
+			opportunityReductionRect[i].x = (i % 10) * 200;
+			opportunityReductionRect[i].y = (i / 10) * 40;
+			opportunityReductionRect[i].w = 200;
+			opportunityReductionRect[i].h = 40;
+		}
+	}
+
+	//opportunity bar's shell
+	if (!opportunityShellTexture.loadFromFile(globalRenderer, "assets/opportunity_bar shell.png")) {
+		printf("[loadMedia] Failed to load opportunity bar's shell!\n");
+		success = false;
+	}
 	return success;
 }
 
@@ -389,7 +412,7 @@ std::string getRandomWord(int level = 1) {
 Monster getNewMonster(int n) {
 	Monster newMonster;
 
-	if (n == 1)
+	if (n == 1) 
 		newMonster = Monster("boring skeleton");
 	else if (n == 2)
 		newMonster = Monster("red skeleton");
@@ -453,7 +476,9 @@ int main(int argc, char* args[]) {
 
 			//initialize oppTimer
 			opportunity = 10000; //10s
+			int reductionFactor = 10000;
 			int oppReset = SDL_GetTicks();
+			int reductionReset = SDL_GetTicks();
 			//string to hold the current opp
 			std::string opportunityString;
 			//opportunity texture
@@ -468,7 +493,9 @@ int main(int argc, char* args[]) {
 				if (getNew) {
 					//reset oppReset time and opportunity
 					oppReset = SDL_GetTicks();
+					reductionReset = SDL_GetTicks();
 					opportunity = 10000;
+					reductionFactor = 10000;
 
 					//get next monster
 					currentMonster = &monsters[current];
@@ -612,6 +639,8 @@ int main(int argc, char* args[]) {
 							currentWord = "";
 							//bGoodJob = true;
 							currentMonster->dealDamage(5);
+							oppReset -= 2500;
+							printf("ATTACK\n");
 
 							currentTicks = SDL_GetTicks();
 						}
@@ -674,11 +703,20 @@ int main(int argc, char* args[]) {
 					}
 				} */
 
+				//decide how fast the reduction bar has to catch up to the oppBar
+				if (reductionFactor > opportunity) {
+					reductionReset -= (reductionFactor - opportunity) / 5;
+				}
+
 				//render current word
 				currentWordTexture.render(globalRenderer, (SCREEN_WIDTH - currentWordTexture.getWidth()) / 2, 340);
 
+				//render oppBar's Shell
+				opportunityShellTexture.render(globalRenderer, 394, 60);
+				//render oppBarReduction
+				opportunityReductionTexture.render(globalRenderer, 400, 70, &opportunityReductionRect[reductionFactor / 100]);
 				//render opportunity timer
-				printf("%i\n", opportunity);
+				printf("Opportunity = %i\n", opportunity);
 				//opportunityTexture.render(globalRenderer, 500, 30);
 				opportunityLTexture.render(globalRenderer, 400, 70, &opportunityRect[opportunity / 100]);
 
@@ -692,6 +730,15 @@ int main(int argc, char* args[]) {
 				else {
 					//update opportunity
 					opportunity = 10000 - (SDL_GetTicks() - oppReset);
+				}
+
+				//decrement reduction Factor -- make sure it doesn't go below 0
+				if (reductionFactor - 1 < 0) {
+					reductionFactor = 0;
+				}
+				else {
+					//update reduction Factor
+					reductionFactor = 10000 - (SDL_GetTicks() - reductionReset);
 				}
 
 				//reset current guess
